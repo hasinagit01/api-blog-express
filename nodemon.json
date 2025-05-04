@@ -1,0 +1,8 @@
+{
+    "watch": ["routes", "requests", "resources", "services", "controllers", "models", "app.js"],
+    "ignore": ["node_modules", ".git", "run", "proc", "media", "mnt"],
+    "ext": "js,json",
+    "events": {
+        "restart": "npm run format:fix && npm run lint:fix"
+    }
+}

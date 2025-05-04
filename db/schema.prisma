@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  email     String    @unique
+  firstname String
+  lastname  String
+  password  String
+  role      Role      @default(READER)
+  comments  Comment[]
+  likes     Like[]
+  posts     Post[]
+}
+
+model Post {
+  id          Int        @id @default(autoincrement())
+  title       String
+  content     String
+  description String?
+  userId      Int
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  categoryId  Int?
+  imageUrl    String?
+  status      PostStatus @default(DRAFT)
+  views       Int        @default(0)
+  comments    Comment[]
+  likes       Like[]
+  category    Category?  @relation(fields: [categoryId], references: [id])
+  user        User       @relation(fields: [userId], references: [id])
+  postTags    PostTag[]
+
+  @@index([userId])
+  @@index([categoryId], map: "Post_categoryId_fkey")
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  content   String
+  userId    Int
+  postId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([postId])
+}
+
+model Category {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  posts Post[]
+}
+
+model Like {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  postId Int
+  post   Post @relation(fields: [postId], references: [id])
+  user   User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, postId])
+  @@index([postId], map: "Like_postId_fkey")
+}
+
+model Tag {
+  id    Int       @id @default(autoincrement())
+  name  String    @unique
+  posts PostTag[]
+}
+
+model PostTag {
+  postId Int
+  tagId  Int
+  post   Post @relation(fields: [postId], references: [id])
+  tag    Tag  @relation(fields: [tagId], references: [id])
+
+  @@id([postId, tagId])
+  @@index([tagId], map: "PostTag_tagId_fkey")
+}
+
+enum Role {
+  ADMIN
+  AUTHOR
+  READER
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+}

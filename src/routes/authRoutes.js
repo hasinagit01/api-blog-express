@@ -1,0 +1,24 @@
+import { Router } from 'express'
+import * as authController from '../controllers/authController.js'
+import { verifyLogout } from '../middlewares/authMiddleware.js'
+//import { requestLogger } from '../middlewares/requestLogger.js'
+
+const router = Router()
+
+// Add debug middleware
+router.use((req, _res, next) => {
+    console.log('Auth route hit:', {
+        path: req.path,
+        method: req.method,
+        body: req.body
+    })
+    next()
+})
+
+//router.use(requestLogger)
+router.post('/login', authController.login)
+router.post('/register', authController.register)
+router.post('/refresh', authController.refresh)
+router.post('/logout', verifyLogout, authController.logout)
+
+export default router

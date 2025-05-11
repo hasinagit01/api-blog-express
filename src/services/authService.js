@@ -4,7 +4,7 @@ import prisma from '../config/database.js'
 import { ApiError } from '../utils/errors.js'
 import { sessionService } from './sessionService.js'
 
-const generateAccessToken = (user) => {
+export const generateAccessToken = (user) => {
     return jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_ACCESS_EXPIRES })
 }
 
@@ -87,12 +87,26 @@ export const register = async (userData) => {
         },
     })
 
-    return {
+    // Generate tokens after user creation
+    const accessToken = generateAccessToken(user)
+    const refreshToken = await sessionService.createSession({
         id: user.id,
         email: user.email,
         firstname: user.firstname,
         lastname: user.lastname,
         role: user.role,
+    })
+
+    return {
+        accessToken,
+        refreshToken,
+        user: {
+            id: user.id,
+            email: user.email,
+            firstname: user.firstname,
+            lastname: user.lastname,
+            role: user.role,
+        },
     }
 }
 

@@ -26,10 +26,12 @@ export const createApp = async () => {
         // Middlewares
         app.use(express.json())
         app.use(express.urlencoded({ extended: false }))
-        app.use(cors({
-            credentials: true,
-            origin: true
-        }))
+        app.use(
+            cors({
+                credentials: true,
+                origin: true,
+            })
+        )
         app.use(corsMiddleware)
 
         // Debug middleware

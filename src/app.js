@@ -11,13 +11,13 @@ const startServer = async () => {
         if (!redisClient.isReady) {
             await redisClient.connect()
         }
-        
+
         // Test Redis connection
         await redisClient.ping()
         console.log('✅ Redis connection verified')
 
         const app = await createApp()
-        
+
         app.listen(config.port, () => {
             console.log(`
                     🚀 Server running:

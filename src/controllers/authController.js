@@ -16,7 +16,7 @@ export const login = async (req, res, next) => {
         const { email, password } = req.body
 
         const authData = await authService.login(email, password)
-        
+
         // Set refresh token in httpOnly cookie
         res.cookie('refreshToken', authData.refreshToken, {
             httpOnly: true,

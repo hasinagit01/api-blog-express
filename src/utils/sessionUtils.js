@@ -21,16 +21,16 @@ export const getSessionData = async (req) => {
         // Get session from Redis using refresh token
         const sessionKey = `refresh:${refreshToken}`
         console.log('Looking for session with key:', sessionKey)
-        
+
         const sessionData = await redisClient.get(sessionKey)
         if (!sessionData) {
             console.log('❌ No session found in Redis')
             return null
         }
-        
+
         console.log('Redis Check:', {
             sessionKey,
-            hasSession: !!sessionData
+            hasSession: !!sessionData,
         })
 
         console.log('✅ Session found in Redis')

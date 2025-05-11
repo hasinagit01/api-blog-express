@@ -35,8 +35,21 @@ export const handleError = (err, _req, res, next) => {
 
 const handlePrismaError = (err) => {
     if (err.code === 'P2002') {
-        const field = err.meta?.target?.[0] || 'field' // Get first field or default
-        return new ApiError(409, `Unique constraint failed: ${field} already exists`)
+        // Vérifier si c'est une violation de contrainte unique sur l'email
+        const field = err.meta?.target?.[0]
+        if (field === 'email') {
+            return new ApiError(
+                409, 
+                `L'adresse email ${err.meta?.target?.[0]} est déjà utilisée`,
+                { field: 'email' }
+            )
+        }
+        // Pour les autres champs uniques
+        return new ApiError(
+            409, 
+            `Le champ ${field} existe déjà`,
+            { field }
+        )
     }
 
     if (err.code === 'P2025') {

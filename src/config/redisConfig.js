@@ -6,10 +6,19 @@ const initRedis = async () => {
     try {
         if (!redisClient) {
             redisClient = createClient({
-                url: process.env.REDIS_URL || 'redis://localhost:6379',
+                url: process.env.REDIS_URL,
                 socket: {
+                    host: process.env.REDIS_HOST,
+                    port: parseInt(process.env.REDIS_PORT),
                     connectTimeout: 10000,
-                }
+                    reconnectStrategy: (retries) => {
+                        if (retries > 5) {
+                            console.error('Max redis retries reached')
+                            return new Error('Max redis retries reached')
+                        }
+                        return Math.min(retries * 100, 3000)
+                    }
+                },
             })
 
             redisClient.on('error', (err) => {
@@ -23,7 +32,7 @@ const initRedis = async () => {
             redisClient.on('ready', () => {
                 console.log('Redis: Connected and ready!')
             })
-
+            
             // Only connect if not already connected
             if (!redisClient.isOpen) {
                 await redisClient.connect()

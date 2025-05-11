@@ -6,14 +6,14 @@ import { getSessionData } from '../utils/sessionUtils.js'
 export const verifyToken = async (req, _res, next) => {
     try {
         console.log('\n=== Auth Verification ===')
-        
+
         // Check Authorization header
         const authHeader = req.headers['authorization']
         const token = authHeader?.split(' ')[1]
         if (!token) {
             throw new ApiError(401, 'No access token provided')
         }
-        
+
         // Check refresh token and session
         const sessionData = await getSessionData(req)
         if (!sessionData) {
@@ -22,7 +22,7 @@ export const verifyToken = async (req, _res, next) => {
 
         // Verify JWT
         const decoded = jwt.verify(token, authConfig.secret)
-        
+
         // Verify session match
         if (decoded.id !== sessionData.id) {
             throw new ApiError(401, 'Session mismatch')
@@ -31,7 +31,7 @@ export const verifyToken = async (req, _res, next) => {
         // Attach data to request
         req.session = sessionData
         req.user = decoded
-        
+
         next()
     } catch (error) {
         console.error('Auth error:', error)

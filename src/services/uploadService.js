@@ -82,7 +82,7 @@ const processImage = async (file, options = {}) => {
         return outputPath
         // eslint-disable-next-line no-unused-vars
     } catch (error) {
-        throw new ApiError(500, "Treatment image on error")
+        throw new ApiError(500, 'Treatment image on error')
     }
 }
 

@@ -135,7 +135,7 @@ multer: Pour gérer l'upload de fichiers
 sharp: Pour optimiser et redimensionner les images
 uuid: Pour générer des noms de fichiers uniques
 
-### Mailer 
+### Mailer
 
 npm install nodemailer handlebars
 

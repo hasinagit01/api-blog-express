@@ -10,14 +10,14 @@ export const healthCheck = async (req, res) => {
             status: 'ok',
             timestamp: new Date().toISOString(),
             services: {
-                redis: redisStatus
-            }
+                redis: redisStatus,
+            },
         })
     } catch (error) {
         console.error('Health check failed:', error)
         res.status(503).json({
             status: 'error',
-            error: error.message
+            error: error.message,
         })
     }
 }

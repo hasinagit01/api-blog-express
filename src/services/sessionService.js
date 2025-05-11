@@ -81,5 +81,5 @@ export const sessionService = {
             console.error('Session update failed:', error)
             throw error
         }
-    }
+    },
 }

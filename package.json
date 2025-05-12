@@ -5,6 +5,7 @@
     "type": "module",
     "scripts": {
         "dev": "cross-env NODE_OPTIONS='--max-old-space-size=4096' nodemon --experimental-specifier-resolution=node src/app.js",
+        "dev:docker": "NODE_OPTIONS='--max-old-space-size=4096' nodemon --experimental-specifier-resolution=node src/app.js",
         "format:fix": "prettier --write .",
         "lint:fix": "eslint --fix .",
         "prisma:generate": "prisma generate",

@@ -1,4 +1,5 @@
-import prisma from '../config/database.js'
+import prisma from '../src/config/database.js'
+import bcrypt from 'bcrypt'
 const { user: User } = prisma
 
 async function main() {
@@ -8,7 +9,7 @@ async function main() {
                 firstname: 'Boza',
                 lastname: 'RAZAFINTSALAMA',
                 email: 'hasinaboz@gmail.com',
-                password: 'hasina1234',
+                password: await bcrypt.hash('hasina1234', 10),
                 posts: {
                     create: [
                         {

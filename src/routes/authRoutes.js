@@ -23,4 +23,8 @@ router.post('/register', validateCreateUser, validateMiddleware, authController.
 router.post('/refresh', authController.refresh)
 router.post('/logout', verifyLogout, authController.logout)
 
+router.get('/verify-email/:token', authController.verifyEmail)
+router.post('/request-password-reset', authController.requestPasswordReset)
+router.post('/reset-password', authController.resetPassword)
+
 export default router

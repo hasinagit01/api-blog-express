@@ -3,9 +3,11 @@ import bcrypt from 'bcrypt'
 import prisma from '../config/database.js'
 import { ApiError } from '../utils/errors.js'
 import { sessionService } from './sessionService.js'
+import emailQueueService from './emailQueueService.js'
+import authConfig from '../config/authConfig.js'
 
 export const generateAccessToken = (user) => {
-    return jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_ACCESS_EXPIRES })
+    return jwt.sign({ id: user.id }, authConfig.secret, { expiresIn: authConfig.expiresIn || '24h' })
 }
 
 /**
@@ -36,11 +38,17 @@ export const login = async (email, password) => {
                     firstname: true,
                     lastname: true,
                     role: true,
+                    isEmailVerified: true,
                 },
             })
 
             if (!user) {
                 throw new ApiError(401, 'Invalid credentials')
+            }
+
+            // Check if email is verified
+            if (!user.isEmailVerified) {
+                throw new ApiError(403, 'Please verify your email before logging in')
             }
 
             const validPassword = await bcrypt.compare(password, user.password)
@@ -57,7 +65,17 @@ export const login = async (email, password) => {
                 role: user.role,
             })
 
-            return { accessToken, refreshToken, user }
+            return {
+                accessToken,
+                refreshToken,
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    firstname: user.firstname,
+                    lastname: user.lastname,
+                    role: user.role,
+                },
+            }
         })()
 
         return await Promise.race([loginPromise, timeout])
@@ -79,35 +97,151 @@ export const login = async (email, password) => {
  */
 export const register = async (userData) => {
     const hashedPassword = await bcrypt.hash(userData.password, 10)
+    const verificationToken = emailQueueService.generateVerificationToken()
+
+    // Check if email already exists
+    const existingUser = await prisma.user.findUnique({
+        where: { email: userData.email },
+    })
+
+    if (existingUser) {
+        throw new ApiError(400, 'Email already registered')
+    }
 
     const user = await prisma.user.create({
         data: {
             ...userData,
             password: hashedPassword,
+            verificationToken,
+            isEmailVerified: false,
         },
     })
 
+    try {
+        // Queue verification email
+        await emailQueueService.queueVerificationEmail(user, verificationToken)
+    } catch (emailError) {
+        console.error('Failed to queue verification email:', emailError)
+        // Continuer malgré l'erreur d'email pour ne pas bloquer l'inscription
+    }
+
     // Generate tokens after user creation
-    const accessToken = generateAccessToken(user)
+    /*  const accessToken = generateAccessToken(user)
     const refreshToken = await sessionService.createSession({
         id: user.id,
         email: user.email,
         firstname: user.firstname,
         lastname: user.lastname,
         role: user.role,
-    })
+    }) */
 
     return {
-        accessToken,
-        refreshToken,
+        //accessToken,
+        //refreshToken,
         user: {
             id: user.id,
             email: user.email,
             firstname: user.firstname,
             lastname: user.lastname,
             role: user.role,
+            isEmailVerified: user.isEmailVerified,
         },
     }
+}
+/**
+ * Verifies a user's email with the verification token
+ */
+export const verifyEmail = async (token) => {
+    if (!token) {
+        throw new ApiError(400, 'Verification token is required')
+    }
+
+    const user = await prisma.user.findFirst({
+        where: { verificationToken: token },
+    })
+
+    if (!user) {
+        throw new ApiError(400, 'Invalid verification token')
+    }
+
+    await prisma.user.update({
+        where: { id: user.id },
+        data: {
+            isEmailVerified: true,
+            verificationToken: null,
+        },
+    })
+
+    return { message: 'Email successfully verified. You can now log in.' }
+}
+
+/**
+ * Requests a password reset email
+ */
+export const requestPasswordReset = async (email) => {
+    if (!email) {
+        throw new ApiError(400, 'Email is required')
+    }
+
+    const user = await prisma.user.findUnique({
+        where: { email },
+    })
+
+    if (!user) {
+        // For security, don't reveal that the user doesn't exist
+        return { message: 'If your email exists in our system, you will receive a password reset link' }
+    }
+
+    const resetToken = emailQueueService.generateVerificationToken()
+    const resetExpires = new Date(Date.now() + 3600000) // 1 hour from now
+
+    await prisma.user.update({
+        where: { id: user.id },
+        data: {
+            resetPasswordToken: resetToken,
+            resetPasswordExpires: resetExpires,
+        },
+    })
+
+    // Queue password reset email
+    await emailQueueService.queuePasswordResetEmail(user, resetToken)
+
+    return { message: 'If your email exists in our system, you will receive a password reset link' }
+}
+
+/**
+ * Resets a user's password with the given token
+ */
+export const resetPassword = async (token, newPassword) => {
+    if (!token || !newPassword) {
+        throw new ApiError(400, 'Token and new password are required')
+    }
+
+    const user = await prisma.user.findFirst({
+        where: {
+            resetPasswordToken: token,
+            resetPasswordExpires: {
+                gt: new Date(),
+            },
+        },
+    })
+
+    if (!user) {
+        throw new ApiError(400, 'Invalid or expired token')
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10)
+
+    await prisma.user.update({
+        where: { id: user.id },
+        data: {
+            password: hashedPassword,
+            resetPasswordToken: null,
+            resetPasswordExpires: null,
+        },
+    })
+
+    return { message: 'Password has been reset successfully. You can now log in with your new password.' }
 }
 
 /**

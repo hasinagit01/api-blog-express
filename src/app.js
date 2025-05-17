@@ -2,6 +2,8 @@ import { config } from './config/env.js'
 import { createApp } from './config/expressConfig.js'
 import { gracefulShutdown } from './utils/shutdown.js'
 import redisClient from './config/redisConfig.js'
+import emailConfig from './config/emailConfig.js'
+import emailWorker from './workers/emailWorker.js'
 
 const startServer = async () => {
     let httpServer = null
@@ -15,10 +17,13 @@ const startServer = async () => {
         // Test Redis connection
         await redisClient.ping()
         console.log('✅ Redis connection verified')
+        
+        // Verify email service connection
+        await emailConfig.verifyConnection()
 
         const app = await createApp()
 
-        app.listen(config.port, () => {
+        httpServer = app.listen(config.port, () => {
             console.log(`
                     🚀 Server running:
                     - Port: ${config.port}
@@ -30,6 +35,7 @@ const startServer = async () => {
         // Enhanced shutdown handling
         const shutdown = gracefulShutdown(httpServer, {
             redis: redisClient,
+            emailWorker, // Add email worker for graceful shutdown
             timeout: 10000, // 10 seconds timeout
         })
 

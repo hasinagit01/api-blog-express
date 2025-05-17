@@ -1,4 +1,6 @@
 import { createClient } from 'redis'
+import { config } from './env.js'
+
 
 let redisClient = null
 
@@ -6,10 +8,10 @@ const initRedis = async () => {
     try {
         if (!redisClient) {
             redisClient = createClient({
-                url: process.env.REDIS_URL,
+                url: config.redis.url,
                 socket: {
-                    host: process.env.REDIS_HOST,
-                    port: parseInt(process.env.REDIS_PORT),
+                    host: config.redis.host,
+                    port: config.redis.port,
                     connectTimeout: 10000,
                     reconnectStrategy: (retries) => {
                         if (retries > 5) {

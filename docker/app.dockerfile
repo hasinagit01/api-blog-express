@@ -3,7 +3,11 @@ FROM node:18-alpine
 WORKDIR /usr/src/app
 
 # Install dependencies including supervisor and nginx
-RUN apk add --no-cache python3 make g++ netcat-openbsd supervisor nginx bash
+# RUN apk add --no-cache python3 make g++ netcat-openbsd supervisor nginx bash
+
+# Install dependencies including supervisor (SANS nginx)
+RUN apk add --no-cache python3 make g++ netcat-openbsd supervisor bash
+
 
 # Install dependencies for Sharp
 RUN apk add --no-cache vips-dev build-base gcc
@@ -34,8 +38,9 @@ COPY docker/supervisord/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 # Copy scripts
 COPY docker/scripts/wait-for-it.sh /usr/local/bin/wait-for-it.sh
 COPY docker/scripts/start-app.sh /usr/local/bin/start-app.sh
-COPY docker/scripts/setup-nginx.sh /usr/local/bin/setup-nginx.sh
-RUN chmod +x /usr/local/bin/wait-for-it.sh /usr/local/bin/start-app.sh /usr/local/bin/setup-nginx.sh
+RUN chmod +x /usr/local/bin/wait-for-it.sh /usr/local/bin/start-app.sh
+# COPY docker/scripts/setup-nginx.sh /usr/local/bin/setup-nginx.sh
+# RUN chmod +x /usr/local/bin/wait-for-it.sh /usr/local/bin/start-app.sh /usr/local/bin/setup-nginx.sh
 
 # Copy application code
 COPY . .

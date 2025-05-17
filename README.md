@@ -1,144 +1,57 @@
-### Installation & Configuration
+### Express API with Docker Setup
+This repository contains a Node.js Express API application fully containerized with Docker. The setup includes multiple services working together to provide a robust development and deployment environment.
 
-# This initializes a new Node.js project and creates a package.json file to manage dependencies.
+Services Overview
+The application stack consists of:
 
-# Project Initialization
+Node.js Application: Express API backend
+Nginx: Web server acting as reverse proxy
+MySQL: Database server
+phpMyAdmin: Database management interface
+Redis: In-memory data store for caching
+Prerequisites
+Docker and Docker Compose installed on your system
+Git (for cloning the repository)
 
-This command initializes a new Node.js project by creating a `package.json` file. It will prompt you for:
+### Prerequisites
+Docker and Docker Compose installed on your system
+Git (for cloning the repository)
 
-- project name
-- version
-- description
-- entry point
-- test command
-- git repository
-- keywords
-- author
-- license
+### Getting Started
+# 1. Clone the repository
+git clone <repository-url>
+cd express-api
 
-# Node API Project Setup
+# 2. Configure environment variables
+Create a .env file in the root directory with the following variables:
+NODE_ENV=development
+SERVER_PORT=9999
 
-Initialize a new Node.js project by creating a package.json file using the npm command line tool. This will guide you through a series of prompts to set up your project configuration.
+DB_NAME=your_database_name
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+DB_ROOT_PASSWORD=your_database_root_password
 
-## Prerequisites
+REDIS_PORT=6379
 
-- Node.js installed on your system
-- npm (Node Package Manager) installed
+3. Build service
+# Rebuild a specific service
+docker-compose build app
 
-## Command Usage
+4. Start the services
+docker-compose up -d
 
-Running this command will:
+5. Restart a specific service
+docker-compose restart app
 
-- Create a new package.json file
-- Set up project metadata
-- Configure initial project settings
+6. Stop all services
+docker-compose down
 
-**`npm init`**
+7. To view logs from a specific service
+docker-compose logs -f app
 
-# Express is a fast, unopinionated, minimalist web framework for Node.js, used to build web applications and APIs.
-
-# Dependencies Installation
-
-Install Express.js, a fast and minimalist web application framework for Node.js:
-
-- Express.js provides a robust set of features for web and mobile applications
-- It simplifies the process of building APIs and web applications
-- The `-i` flag is shorthand for `install`
-
-**`npm i express`**
-
-# Installs Nodemon, a tool for automatically restarting the server during development.
-
-# Development Dependencies
-
-Install `nodemon` as a development dependency. This tool helps automatically restart the Node.js application when file changes are detected during development.
-
-## Installation
-
-<!-- Installs Nodemon as a dependency, a utility that monitors for changes in files and automatically restarts the Node.js application. This is particularly useful during development to avoid manually restarting the server after each code change. The `-i` flag is shorthand for `install`. -->
-
-**`npm i nodemon`**
-
-<!-- ESLint: JavaScript and TypeScript linter for identifying and fixing code issues -->
-
-**`npm i eslint -D`**
-
-<!-- Prettier: Code formatter that ensures consistent code style -->
-
-**`npm i prettier -D`**
-
-<!-- ESLint-config-prettier: Disables ESLint rules that might conflict with Prettier -->
-
-**`npm i eslint-config-prettier -D`**
-
-<!-- Dotenv: Loads environment variables from a .env file into process.env -->
-
-**`npm i dotenv`**
-
-<!-- CORS: Express middleware that enables Cross-Origin Resource Sharing -->
-
-**`npm i cors`**
-
-### Installation Prisma
-
-npm i prisma
-npm i @prisma/client
-npx prisma init
-
-### Generation models on the file schema.prisma via bdd
-
-npx prisma db pull
-
-## migrate database
-
-# launch migration
-
-npx prisma migrate dev --name init
-
-# update migration
-
-npx prisma migrate dev --create-only --name update_user_model
-npx prisma migrate dev
-
-# if don't need to keep existing data
-
-npx prisma migrate reset
-
-## seed database
-
+1. Database prisma mysql
+docker exec -it express-api_app-1 sh
 npx prisma generate
-(npx prisma db push)
+npx prisma migrate deploy  (en production)
 npx prisma db seed
-
-# verfication
-
-npx prisma db pull
-
-## form validator
-
-npm i express-validator
-
-### Manage Authentication
-
-# With JWT
-
-npm install jsonwebtoken bcrypt
-
-# generate random bcrypt
-
-node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-
-### Upload image with
-
-npm install multer sharp uuid
-multer: Pour gérer l'upload de fichiers
-sharp: Pour optimiser et redimensionner les images
-uuid: Pour générer des noms de fichiers uniques
-
-### Mailer
-
-npm install nodemailer handlebars
-
-npm install @bull-board/express @bull-board/api bullmq nodemailer handlebars ioredis
-
-<!-- https://www.youtube.com/watch?v=bSZHW2niCEI -->

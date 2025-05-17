@@ -55,9 +55,13 @@ prisma/migrations/
 uploads/*
 !uploads/.gitkeep
 
+# Documentation
+READMEWithoutDocker.md
+
 # Redis
 dump.rdb
 
 # Temporary files
 tmp/
 temp/
+

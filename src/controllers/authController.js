@@ -1,6 +1,5 @@
 import * as authService from '../services/authService.js'
 import { userResource } from '../resources/users/userResource.js'
-import { sessionService } from '../services/sessionService.js'
 
 /**
  * Handles user login authentication
@@ -26,7 +25,7 @@ export const login = async (req, res, next) => {
         })
 
         console.log('Sending response...')
-        // Envoyer uniquement accessToken et user data
+        // Send only the access token and user data
         res.status(200).json({
             message: 'Login successful',
             accessToken: authData.accessToken,
@@ -39,7 +38,7 @@ export const login = async (req, res, next) => {
 }
 
 /**
- * Handles new user registration
+ * Handles new user registration with email verification
  * @async
  * @param {import('express').Request} req - Express request object
  * @param {import('express').Response} res - Express response object
@@ -51,7 +50,7 @@ export const register = async (req, res, next) => {
     try {
         const { firstname, lastname, email, password, role } = req.body
 
-        // Register user
+        // Register user wtih email verification
         const newUser = await authService.register({
             firstname,
             lastname,
@@ -60,26 +59,10 @@ export const register = async (req, res, next) => {
             role: role || 'READER',
         })
 
-        // Generate tokens
-        const accessToken = authService.generateAccessToken(newUser)
-        const refreshToken = await sessionService.createSession({
-            id: newUser.id,
-            email: newUser.email,
-            role: newUser.role,
-        })
-
-        // Set refresh token in httpOnly cookie
-        res.cookie('refreshToken', refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        })
-
         // Send response
         res.status(201).json({
-            message: 'User registered successfully',
-            accessToken,
+            message: 'Registration successful! Please check your email to verify your account.',
+            //accessToken,
             user: userResource(newUser),
         })
     } catch (error) {
@@ -104,6 +87,60 @@ export const logout = async (req, res, next) => {
 
         res.clearCookie('refreshToken')
         res.json({ message: 'Logged out successfully' })
+    } catch (error) {
+        next(error)
+    }
+}
+
+/**
+ * Verifies a user's email address
+ * @async
+ * @param {import('express').Request} req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @param {import('express').NextFunction} next - Express next middleware function
+ */
+export const verifyEmail = async (req, res, next) => {
+    try {
+        const { token } = req.params
+        const result = await authService.verifyEmail(token)
+
+        res.status(200).json(result)
+    } catch (error) {
+        next(error)
+    }
+}
+
+/**
+ * Requests a password reset email
+ * @async
+ * @param {import('express').Request} req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @param {import('express').NextFunction} next - Express next middleware function
+ */
+export const requestPasswordReset = async (req, res, next) => {
+    try {
+        const { email } = req.body
+        const result = await authService.requestPasswordReset(email)
+
+        res.status(200).json(result)
+    } catch (error) {
+        next(error)
+    }
+}
+
+/**
+ * Resets a user's password using a token
+ * @async
+ * @param {import('express').Request} req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @param {import('express').NextFunction} next - Express next middleware function
+ */
+export const resetPassword = async (req, res, next) => {
+    try {
+        const { token, newPassword } = req.body
+        const result = await authService.resetPassword(token, newPassword)
+
+        res.status(200).json(result)
     } catch (error) {
         next(error)
     }

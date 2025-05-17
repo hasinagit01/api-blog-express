@@ -17,7 +17,7 @@ const startServer = async () => {
         // Test Redis connection
         await redisClient.ping()
         console.log('✅ Redis connection verified')
-        
+
         // Verify email service connection
         await emailConfig.verifyConnection()
 

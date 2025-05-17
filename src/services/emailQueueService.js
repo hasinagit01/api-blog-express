@@ -45,7 +45,7 @@ export const generateVerificationToken = () => {
  */
 export const getVerificationUrl = (token) => {
     //return `${config.frontendUrl}/verify-email?token=${token}`
-    // Solution provisoire avant l'implémentation du frontend 
+    // Solution provisoire avant l'implémentation du frontend
     // Utiliser une valeur de configuration basée sur l'environnement
     const baseUrl = config.verificationUrl || `${config.apiUrl}/auth/verify-email`
 

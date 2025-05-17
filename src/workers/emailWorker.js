@@ -55,7 +55,7 @@ const processJob = async (job) => {
 // Create worker  en utilisant processJob comme callback
 const emailWorker = new Worker(
     queueName,
-    processJob,  // Utiliser la fonction processJob ici
+    processJob, // Utiliser la fonction processJob ici
     {
         connection: redisConnection,
         concurrency: 5,

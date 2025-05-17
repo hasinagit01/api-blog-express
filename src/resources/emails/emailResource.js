@@ -12,7 +12,7 @@ export function emailTemplateResource(template) {
         textContent: template.textContent,
         isActive: template.isActive,
         createdAt: template.createdAt,
-        updatedAt: template.updatedAt
+        updatedAt: template.updatedAt,
     }
 }
 

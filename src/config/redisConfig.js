@@ -1,7 +1,6 @@
 import { createClient } from 'redis'
 import { config } from './env.js'
 
-
 let redisClient = null
 
 const initRedis = async () => {
@@ -19,7 +18,7 @@ const initRedis = async () => {
                             return new Error('Max redis retries reached')
                         }
                         return Math.min(retries * 100, 3000)
-                    }
+                    },
                 },
             })
 
@@ -34,7 +33,7 @@ const initRedis = async () => {
             redisClient.on('ready', () => {
                 console.log('Redis: Connected and ready!')
             })
-            
+
             // Only connect if not already connected
             if (!redisClient.isOpen) {
                 await redisClient.connect()

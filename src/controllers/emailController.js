@@ -1,4 +1,10 @@
-import { getAllTemplates, getTemplateById, createTemplate, updateTemplate, deleteTemplate } from '../services/emailService.js'
+import {
+    getAllTemplates,
+    getTemplateById,
+    createTemplate,
+    updateTemplate,
+    deleteTemplate,
+} from '../services/emailService.js'
 import { queueEmail } from '../services/emailQueueService.js'
 import { emailTemplateResource, emailTemplateCollection } from '../resources/emails/emailResource.js'
 import { ApiError } from '../utils/errors.js'
@@ -13,7 +19,7 @@ export async function getAllEmailTemplates(req, res) {
     const { page = 1, limit = 10, sortBy = 'id', sortOrder = 'desc', search = '' } = req.query
     const { templates, total } = await getAllTemplates(parseInt(page), parseInt(limit), sortBy, sortOrder, search)
     const totalPages = Math.ceil(total / limit)
-    
+
     if (!templates.length) {
         throw new ApiError(404, 'No email templates found')
     }
@@ -62,12 +68,12 @@ export async function createEmailTemplate(req, res) {
         subject,
         htmlContent,
         textContent,
-        isActive: isActive !== undefined ? isActive : true
+        isActive: isActive !== undefined ? isActive : true,
     })
 
     res.status(201).json({
         message: 'Email template created successfully',
-        data: emailTemplateResource(newTemplate)
+        data: emailTemplateResource(newTemplate),
     })
 }
 
@@ -80,13 +86,13 @@ export async function createEmailTemplate(req, res) {
 export async function updateEmailTemplate(req, res) {
     const { id } = req.params
     const { name, subject, htmlContent, textContent, isActive } = req.body
-    
+
     const updatedTemplate = await updateTemplate(id, {
         name,
         subject,
         htmlContent,
         textContent,
-        isActive
+        isActive,
     })
 
     if (!updatedTemplate) {
@@ -95,7 +101,7 @@ export async function updateEmailTemplate(req, res) {
 
     res.status(200).json({
         message: 'Email template updated successfully',
-        data: emailTemplateResource(updatedTemplate)
+        data: emailTemplateResource(updatedTemplate),
     })
 }
 
@@ -114,7 +120,7 @@ export async function deleteEmailTemplate(req, res) {
     }
 
     res.status(200).json({
-        message: 'Email template deleted successfully'
+        message: 'Email template deleted successfully',
     })
 }
 
@@ -126,13 +132,13 @@ export async function deleteEmailTemplate(req, res) {
  */
 export async function sendEmail(req, res) {
     const { to, templateName, data } = req.body
-    
+
     try {
         const job = await queueEmail({ to, templateName, data })
-        
+
         res.status(202).json({
             message: 'Email queued successfully',
-            jobId: job.id
+            jobId: job.id,
         })
     } catch (error) {
         if (error.message.includes('not found')) {

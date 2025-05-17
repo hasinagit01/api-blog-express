@@ -38,18 +38,10 @@ const handlePrismaError = (err) => {
         // Vérifier si c'est une violation de contrainte unique sur l'email
         const field = err.meta?.target?.[0]
         if (field === 'email') {
-            return new ApiError(
-                409, 
-                `L'adresse email ${err.meta?.target?.[0]} est déjà utilisée`,
-                { field: 'email' }
-            )
+            return new ApiError(409, `L'adresse email ${err.meta?.target?.[0]} est déjà utilisée`, { field: 'email' })
         }
         // Pour les autres champs uniques
-        return new ApiError(
-            409, 
-            `Le champ ${field} existe déjà`,
-            { field }
-        )
+        return new ApiError(409, `Le champ ${field} existe déjà`, { field })
     }
 
     if (err.code === 'P2025') {

@@ -1,5 +1,6 @@
 import * as authService from '../services/authService.js'
 import { userResource } from '../resources/users/userResource.js'
+import { sessionService } from './sessionService.js'
 
 /**
  * Handles user login authentication
@@ -85,8 +86,18 @@ export const logout = async (req, res, next) => {
         const refreshToken = req.cookies.refreshToken
         await authService.logout(refreshToken)
 
+        // Blacklister le token d'accès s'il est disponible
+        const authHeader = req.headers['authorization']
+        if (authHeader) {
+            const accessToken = authHeader.split(' ')[1]
+            if (accessToken && req.session) {
+                await sessionService.blacklistToken(accessToken, req.user.id)
+                console.log('Access token blacklisted during logout')
+            }
+        }
+
         res.clearCookie('refreshToken')
-        res.json({ message: 'Logged out successfully' })
+        res.status(200).json({ message: 'Logged out successfully' })
     } catch (error) {
         next(error)
     }

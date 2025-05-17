@@ -5,9 +5,39 @@ import { ApiError } from '../utils/errors.js'
 import { sessionService } from './sessionService.js'
 import emailQueueService from './emailQueueService.js'
 import authConfig from '../config/authConfig.js'
+import { v4 as uuidv4 } from 'uuid'
 
+/**
+ * Verify if a plain password matches a hashed password
+ * @param {string} plainPassword - The plain text password to check
+ * @param {string} hashedPassword - The hashed password from database
+ * @returns {Promise<boolean>} - True if password matches
+ * @private
+ */
+const verifyPassword = async (plainPassword, hashedPassword) => {
+    return await bcrypt.compare(plainPassword, hashedPassword)
+}
+
+/**
+ * Generates an access token for a user
+ * @description This function generates a JWT access token for the user.
+ * The token includes the user's ID, email, role, and a unique identifier (jti).
+ * The token is signed with a secret key and has an expiration time.
+ * @param {*} user 
+ * @returns 
+ */
 export const generateAccessToken = (user) => {
-    return jwt.sign({ id: user.id }, authConfig.secret, { expiresIn: authConfig.expiresIn || '24h' })
+    const jti = uuidv4() // Generate a unique token ID
+    return jwt.sign(
+        {
+            id: user.id,
+            email: user.email,
+            role: user.role,
+            jti, // Include the unique ID in the token
+        },
+        authConfig.secret,
+        { expiresIn: authConfig.expiresIn || '15m' }
+    )
 }
 
 /**
@@ -18,70 +48,81 @@ export const generateAccessToken = (user) => {
  * @throws {ApiError} 401 if user not found or invalid password
  */
 export const login = async (email, password) => {
-    if (!email || !password) {
-        throw new ApiError(400, 'Email and password are required')
-    }
-
-    const timeout = new Promise((_, reject) =>
-        // eslint-disable-next-line no-undef
-        setTimeout(() => reject(new ApiError(408, 'Login request timeout')), 5000)
-    )
-
     try {
-        const loginPromise = (async () => {
-            const user = await prisma.user.findUnique({
-                where: { email },
-                select: {
-                    id: true,
-                    email: true,
-                    password: true,
-                    firstname: true,
-                    lastname: true,
-                    role: true,
-                    isEmailVerified: true,
-                },
-            })
+        // Trouver l'utilisateur par email
+        const user = await prisma.user.findUnique({
+            where: { email },
+        })
 
-            if (!user) {
-                throw new ApiError(401, 'Invalid credentials')
-            }
+        if (!user) {
+            throw new ApiError(401, 'Invalid email or password')
+        }
 
-            // Check if email is verified
-            if (!user.isEmailVerified) {
-                throw new ApiError(403, 'Please verify your email before logging in')
-            }
+        // Vérifier que le compte est actif
+        if (!user.isEmailVerified) {
+            throw new ApiError(403, 'Account is not active. Please verify your email')
+        }
 
-            const validPassword = await bcrypt.compare(password, user.password)
-            if (!validPassword) {
-                throw new ApiError(401, 'Invalid password')
-            }
+        // Vérifier le mot de passe
+        const passwordValid = await verifyPassword(password, user.password)
+        if (!passwordValid) {
+            throw new ApiError(401, 'Invalid email or password')
+        }
 
-            const accessToken = generateAccessToken(user)
-            const refreshToken = await sessionService.createSession({
+        // Générer un token d'accès avec un ID unique (jti)
+        const jti = uuidv4() // Identifiant unique pour ce token
+        const accessToken = jwt.sign(
+            {
                 id: user.id,
                 email: user.email,
-                firstname: user.firstname,
-                lastname: user.lastname,
                 role: user.role,
-            })
+                jti, // Inclure l'identifiant unique
+            },
+            authConfig.secret,
+            { expiresIn: authConfig.expiresIn || '15m' }
+        )
 
-            return {
-                accessToken,
-                refreshToken,
-                user: {
-                    id: user.id,
-                    email: user.email,
-                    firstname: user.firstname,
-                    lastname: user.lastname,
-                    role: user.role,
-                },
-            }
-        })()
+        // Créer une session et obtenir un refresh token
+        const userData = {
+            id: user.id,
+            firstname: user.firstname,
+            lastname: user.lastname,
+            email: user.email,
+            role: user.role,
+        }
+        const refreshToken = await sessionService.createSession(userData)
 
-        return await Promise.race([loginPromise, timeout])
+        // Données de l'utilisateur à renvoyer au client
+        const userDetails = {
+            id: user.id,
+            firstname: user.firstname,
+            lastname: user.lastname,
+            email: user.email,
+            role: user.role,
+        }
+
+        // Incrémenter le compteur de connexions
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                loginCount: { increment: 1 },
+                lastLogin: new Date(),
+            },
+        })
+
+        console.log(`User ${user.id} (${user.email}) logged in successfully`)
+
+        return {
+            accessToken,
+            refreshToken,
+            user: userDetails,
+        }
     } catch (error) {
         console.error('Login failed:', error)
-        throw error instanceof ApiError ? error : new ApiError(500, 'Login failed')
+        if (error instanceof ApiError) {
+            throw error
+        }
+        throw new ApiError(500, 'Authentication failed')
     }
 }
 
@@ -125,19 +166,7 @@ export const register = async (userData) => {
         // Continuer malgré l'erreur d'email pour ne pas bloquer l'inscription
     }
 
-    // Generate tokens after user creation
-    /*  const accessToken = generateAccessToken(user)
-    const refreshToken = await sessionService.createSession({
-        id: user.id,
-        email: user.email,
-        firstname: user.firstname,
-        lastname: user.lastname,
-        role: user.role,
-    }) */
-
     return {
-        //accessToken,
-        //refreshToken,
         user: {
             id: user.id,
             email: user.email,
@@ -172,7 +201,10 @@ export const verifyEmail = async (token) => {
         },
     })
 
-    return { message: 'Email successfully verified. You can now log in.' }
+    return {
+        message: 'Email successfully verified. You can now log in.',
+        verified: true,
+    }
 }
 
 /**
@@ -270,8 +302,25 @@ export const refresh = async (refreshToken) => {
  * @returns {Promise<void>}
  */
 export const logout = async (refreshToken) => {
-    if (!refreshToken) {
-        return
+    try {
+        if (!refreshToken) {
+            throw new ApiError(400, 'Refresh token is required')
+        }
+        
+        // Récupérer les données de session pour obtenir l'ID utilisateur
+        const sessionData = await sessionService.getSession(refreshToken)
+        if (!sessionData) {
+            throw new ApiError(401, 'Invalid session')
+        }
+        
+        // Supprimer la session
+        await sessionService.deleteSession(refreshToken)
+        
+        console.log(`User ${sessionData.id} logged out successfully`)
+        
+        return true
+    } catch (error) {
+        console.error('Logout failed:', error)
+        throw error instanceof ApiError ? error : new ApiError(500, 'Logout failed')
     }
-    await sessionService.deleteSession(refreshToken)
 }

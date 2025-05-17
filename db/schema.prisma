@@ -16,6 +16,10 @@ model User {
   lastname  String
   password  String
   role      Role      @default(READER)
+  isEmailVerified      Boolean   @default(false)
+  verificationToken    String?
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
   comments  Comment[]
   likes     Like[]
   posts     Post[]
@@ -88,6 +92,17 @@ model PostTag {
 
   @@id([postId, tagId])
   @@index([tagId], map: "PostTag_tagId_fkey")
+}
+model EmailTemplate {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  subject     String
+  htmlContent String   @db.Text
+  textContent String   @db.Text
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
 }
 
 enum Role {

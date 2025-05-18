@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken'
 import { ApiError } from '../utils/errors.js'
 import authConfig from '../config/authConfig.js'
 import { getSessionData } from '../utils/sessionUtils.js'
-import { sessionService } from './sessionService.js'
+import { sessionService } from '../services/sessionService.js'
 
 /**
  * Verify JWT token and session

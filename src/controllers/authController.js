@@ -1,6 +1,6 @@
 import * as authService from '../services/authService.js'
 import { userResource } from '../resources/users/userResource.js'
-import { sessionService } from './sessionService.js'
+import { sessionService } from '../services/sessionService.js'
 
 /**
  * Handles user login authentication

@@ -25,6 +25,12 @@ export const sessionService = {
             await redisClient.set(sessionKey, JSON.stringify(sessionData))
             await redisClient.expire(sessionKey, REFRESH_TOKEN_EXPIRY)
 
+            // 🔹 Ajouter le token au set des sessions de l'utilisateur
+            
+            // Utilisation de la syntaxe correcte pour redis v4+
+            const userSessionsKey = `user_sessions:${userData.id}`
+            await redisClient.sAdd(userSessionsKey, refreshToken)
+
             return refreshToken
         } catch (error) {
             console.error('Session creation failed:', error)
@@ -50,7 +56,16 @@ export const sessionService = {
             if (!refreshToken) return
 
             const sessionKey = `refresh:${refreshToken}`
-            await redisClient.del(sessionKey)
+            // Récupérer les données de session pour trouver l'ID utilisateur
+            const sessionData = await this.getSession(refreshToken)
+            
+            if (sessionData && sessionData.id) {
+                // Supprimer le token de l'ensemble des sessions de l'utilisateur
+                const userSessionsKey = `user_sessions:${sessionData.id}`
+                await redisClient.sRem(userSessionsKey, refreshToken)
+            }
+
+            return await redisClient.del(sessionKey)
         } catch (error) {
             console.error('Delete session failed:', error)
             throw error
@@ -72,10 +87,10 @@ export const sessionService = {
                 role: userData.role,
             }
 
-            // Mettre à jour les données dans Redis
             await redisClient.set(sessionKey, JSON.stringify(sessionData))
-            // Réinitialiser le TTL
             await redisClient.expire(sessionKey, REFRESH_TOKEN_EXPIRY)
+
+            // ✅ On garde le sadd uniquement dans createSession, pas besoin ici sauf si l'id change
 
             console.log('✅ Session updated in Redis:', sessionKey)
             return sessionData
@@ -85,68 +100,42 @@ export const sessionService = {
         }
     },
 
-    /**
-     * Check if user has any active sessions
-     * @param {string|number} userId - User ID
-     * @returns {Promise<boolean>} - True if user has active sessions
-     */
     async userHasActiveSession(userId) {
         try {
-            // Puisque votre format de clé est different, nous devons
-            // récupérer toutes les clés et vérifier leur contenu
-            const keys = await redisClient.keys('refresh:*')
-            
-            // Parcourir les clés et vérifier si l'une d'elles appartient à l'utilisateur
-            for (const key of keys) {
-                const sessionData = await redisClient.get(key)
-                if (sessionData) {
-                    const parsed = JSON.parse(sessionData)
-                    if (parsed.id === userId) {
-                        return true
-                    }
-                }
+            if (!userId) {
+                throw new Error('User ID is required')
             }
             
-            return false
+            const userSessionsKey = `user_sessions:${userId}`
+            
+            // Vérifier si l'utilisateur a des sessions actives
+            // Avec Redis v4+, utilisez sCard (anciennement scard)
+            const sessionCount = await redisClient.sCard(userSessionsKey)
+            
+            return sessionCount > 0
         } catch (error) {
-            console.error('Error checking user sessions:', error)
+            console.error('Error checking active sessions:', error)
             return false
         }
     },
 
-    /**
-     * Blacklist a JWT token
-     * @param {string} token - The JWT token to blacklist
-     * @param {string|number} userId - User ID associated with the token
-     * @returns {Promise<boolean>} - True if token was blacklisted successfully
-     */
     async blacklistToken(token, userId) {
         try {
-            if (!token) {
-                return false
-            }
-            
-            // Décoder le token pour obtenir sa date d'expiration
+            if (!token) return false
+
             const decoded = jwt.decode(token)
-            if (!decoded || !decoded.exp) {
-                return false
-            }
-            
-            // Calculer le temps restant jusqu'à expiration
+            if (!decoded || !decoded.exp) return false
+
             const expirationTime = decoded.exp
             const currentTime = Math.floor(Date.now() / 1000)
             const ttl = Math.max(expirationTime - currentTime, 0)
-            
-            // Si le token est déjà expiré, pas besoin de le blacklister
-            if (ttl <= 0) {
-                return false
-            }
-            
-            // Ajouter le token à la liste noire
+
+            if (ttl <= 0) return false
+
             const blacklistKey = `${BLACKLIST_PREFIX}${token}`
             await redisClient.set(blacklistKey, userId.toString())
             await redisClient.expire(blacklistKey, ttl)
-            
+
             console.log(`Token blacklisted for user ${userId} with TTL ${ttl}s`)
             return true
         } catch (error) {
@@ -155,20 +144,12 @@ export const sessionService = {
         }
     },
 
-    /**
-     * Check if a token is blacklisted
-     * @param {string} token - The JWT token to check
-     * @returns {Promise<boolean>} - True if token is blacklisted
-     */
     async isTokenBlacklisted(token) {
         try {
-            if (!token) {
-                return false
-            }
-            
+            if (!token) return false
+
             const blacklistKey = `${BLACKLIST_PREFIX}${token}`
             const exists = await redisClient.exists(blacklistKey)
-            
             return exists === 1
         } catch (error) {
             console.error('Error checking blacklisted token:', error)

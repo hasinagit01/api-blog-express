@@ -92,11 +92,12 @@ export const login = async (email, password) => {
         }
         const refreshToken = await sessionService.createSession(userData)
 
+        console.log('userconneted', user)
         // Incrémenter le compteur de connexions
         await prisma.user.update({
             where: { id: user.id },
             data: {
-                countLogin: { increment: 1 },
+                loginCount: { increment: 1 },
                 lastLogin: new Date(),
             },
         })

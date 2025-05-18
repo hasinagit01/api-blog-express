@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
+  //output   = "../generated/prisma"
 }
 
 datasource db {
@@ -19,7 +19,7 @@ model User {
   resetPasswordExpires DateTime?
   resetPasswordToken   String?
   verificationToken    String?
-  countLogin           Int       @default(0)
+  loginCount           Int       @default(0)
   lastLogin            DateTime?
   comments             Comment[]
   likes                Like[]

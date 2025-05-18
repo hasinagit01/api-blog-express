@@ -92,20 +92,11 @@ export const login = async (email, password) => {
         }
         const refreshToken = await sessionService.createSession(userData)
 
-        // Données de l'utilisateur à renvoyer au client
-        const userDetails = {
-            id: user.id,
-            firstname: user.firstname,
-            lastname: user.lastname,
-            email: user.email,
-            role: user.role,
-        }
-
         // Incrémenter le compteur de connexions
         await prisma.user.update({
             where: { id: user.id },
             data: {
-                loginCount: { increment: 1 },
+                countLogin: { increment: 1 },
                 lastLogin: new Date(),
             },
         })
@@ -115,7 +106,7 @@ export const login = async (email, password) => {
         return {
             accessToken,
             refreshToken,
-            user: userDetails,
+            user: userData,
         }
     } catch (error) {
         console.error('Login failed:', error)

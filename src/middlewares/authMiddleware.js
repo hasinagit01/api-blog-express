@@ -57,7 +57,7 @@ export const verifyToken = async (req, _res, next) => {
         next()
     } catch (error) {
         console.error('Auth error:', error)
-        next(error instanceof ApiError ? error : new ApiError(401, 'Authentication failed'))
+        next(error instanceof ApiError ? error : new ApiError(401, 'Session expired or invalid'))
     }
 }
 

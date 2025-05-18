@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -8,24 +9,23 @@ datasource db {
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  email     String    @unique
-  firstname String
-  lastname  String
-  password  String
-  role      Role      @default(READER)
+  id                   Int       @id @default(autoincrement())
+  email                String    @unique
+  firstname            String
+  lastname             String
+  password             String
+  role                 Role      @default(READER)
   isEmailVerified      Boolean   @default(false)
-  verificationToken    String?
-  resetPasswordToken   String?
   resetPasswordExpires DateTime?
-  loginCount           Int       @default(0)  
-  lastLogin            DateTime? 
-  
-  comments  Comment[]
-  likes     Like[]
-  posts     Post[]
+  resetPasswordToken   String?
+  verificationToken    String?
+  countLogin           Int       @default(0)
+  lastLogin            DateTime?
+  comments             Comment[]
+  likes                Like[]
+  posts                Post[]
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }
 
 model Post {
@@ -96,6 +96,7 @@ model PostTag {
   @@id([postId, tagId])
   @@index([tagId], map: "PostTag_tagId_fkey")
 }
+
 model EmailTemplate {
   id          String   @id @default(uuid())
   name        String   @unique
@@ -105,7 +106,6 @@ model EmailTemplate {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
 }
 
 enum Role {

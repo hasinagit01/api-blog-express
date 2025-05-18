@@ -39,6 +39,11 @@ const initRedis = async () => {
                 await redisClient.connect()
             }
         }
+        // Assurez-vous que le client est connecté avant de le retourner
+        if (!redisClient.isOpen) {
+            await redisClient.connect()
+        }
+        
         return redisClient
     } catch (error) {
         console.error('Redis initialization failed:', error)

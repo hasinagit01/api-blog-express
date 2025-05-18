@@ -50,6 +50,9 @@ prisma/*.db
 prisma/migrations/
 *.db
 *.db-journal
+/generated
+/generated/
+generated/
 
 # Uploads
 uploads/*

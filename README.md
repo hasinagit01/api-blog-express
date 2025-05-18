@@ -62,3 +62,6 @@ docker-compose build app
    npx prisma generate
    npx prisma migrate deploy (en production)
    npx prisma db seed
+
+   Pour la mise à jour de schema prisma 
+   npx prisma migrate dev --name descriptive_name --schema=./db/schema.prisma

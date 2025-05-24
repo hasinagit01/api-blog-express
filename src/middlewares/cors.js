@@ -8,8 +8,9 @@ import { config } from '../config/env.js'
  */
 export const corsMiddleware = (_req, res, next) => {
     try {
+        const origin = config.cors.origin === '*' ? config.frontendUrl : config.cors.origin
         // Set CORS headers
-        res.setHeader('Access-Control-Allow-Origin', config.cors.origin)
+        res.setHeader('Access-Control-Allow-Origin', origin)
         res.setHeader('Access-Control-Allow-Methods', config.cors.methods.join(', '))
         res.setHeader('Access-Control-Allow-Headers', config.cors.headers.join(', ')) // Fixed separator
         res.setHeader('Access-Control-Max-Age', '86400') // 24 hours caching for preflight

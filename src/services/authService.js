@@ -276,7 +276,7 @@ export const resetPassword = async (token, newPassword) => {
  */
 export const refresh = async (refreshToken) => {
     if (!refreshToken) {
-        throw new ApiError(401, 'Refresh token required')
+        throw new ApiError(401, 'Invalid account')
     }
 
     const session = await sessionService.getSession(refreshToken)

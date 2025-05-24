@@ -17,6 +17,7 @@ router.use(verifyToken)
 // Configuration de l'upload pour les posts
 const postImageUpload = createUploadMiddleware({
     type: 'posts',
+    fieldName: 'postImage', 
     maxSize: defaultMaxSize,
     allowedTypes: mimeTypes,
 })

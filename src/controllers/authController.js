@@ -81,16 +81,42 @@ export const refresh = async (req, res, next) => {
     }
 }
 
-export const logout = async (req, res, next) => {
+export const logout = async (req, res, _next) => {
     try {
-        const refreshToken = req.cookies.refreshToken
+        // Récupérer le refreshToken soit du cookie, soit du corps de la requête
+        const refreshToken = req.cookies.refreshToken || req.body.refreshToken
+
+        // Si aucun refreshToken n'est trouvé, log et continue (au lieu de générer une erreur)
+        if (!refreshToken) {
+            console.log('No refresh token found during logout. Continuing with local logout.')
+
+            // Blacklister le token d'accès s'il est disponible
+            const authHeader = req.headers['authorization']
+            if (authHeader) {
+                const accessToken = authHeader.split(' ')[1]
+                if (accessToken && req.user && req.user.id) {
+                    try {
+                        await sessionService.blacklistToken(accessToken, req.user.id)
+                        console.log('Access token blacklisted during logout')
+                    } catch (blacklistError) {
+                        console.error('Error blacklisting token:', blacklistError)
+                    }
+                }
+            }
+
+            // Effacer le cookie quand même
+            res.clearCookie('refreshToken')
+            return res.status(200).json({ message: 'Logged out successfully (no refresh token)' })
+        }
+
+        // S'il y a un refreshToken, procéder avec la logique existante
         await authService.logout(refreshToken)
 
         // Blacklister le token d'accès s'il est disponible
         const authHeader = req.headers['authorization']
         if (authHeader) {
             const accessToken = authHeader.split(' ')[1]
-            if (accessToken && req.session) {
+            if (accessToken && req.user && req.user.id) {
                 await sessionService.blacklistToken(accessToken, req.user.id)
                 console.log('Access token blacklisted during logout')
             }
@@ -99,7 +125,11 @@ export const logout = async (req, res, next) => {
         res.clearCookie('refreshToken')
         res.status(200).json({ message: 'Logged out successfully' })
     } catch (error) {
-        next(error)
+        console.error('Logout error:', error)
+        // Même en cas d'erreur, essayer de nettoyer le cookie
+        res.clearCookie('refreshToken')
+        // Retourner un succès partiel au lieu d'une erreur
+        res.status(200).json({ message: 'Partial logout successful (error occurred)' })
     }
 }
 
